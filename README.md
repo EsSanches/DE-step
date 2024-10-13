@@ -16,3 +16,4 @@
 [Task_spark_2](https://github.com/EsSanches/DE-step/blob/main/Spark/Task_spark_2_git.ipynb)
 
 # Пример обработки данных (Pandas)
+Очистка и преобразование данных 
