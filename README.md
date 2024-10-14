@@ -1,7 +1,7 @@
 # Примеры работы Spark
 
 Генерация и анализ информации
-[task1.ipynb](https://github.com/EsSanches/DE-step/blob/main/Spark/task1_git.ipynb)
+[task1](https://github.com/EsSanches/DE-step/blob/main/Spark/task1_git.ipynb)
 
 ## Генератор синтетических данных
 структура наполнения 
@@ -17,3 +17,16 @@
 
 # Пример обработки данных (Pandas)
 Очистка и преобразование данных на примере [wb](https://github.com/EsSanches/DE-step/blob/main/Pandas/wb2.ipynb)
+
+# Пример загрузки данных и расчета витрины
+
+Описание скрипта
+- создание таблиц фактов и справочников в Greenplum
+- написал функции для загрузки справочников (с полной перезаписью данных), больших таблиц фактов (с подменой партиций) и расчета витрины
+скрипт [Greenplum.sql]()
+
+
+
+
+
+
