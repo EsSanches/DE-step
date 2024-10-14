@@ -26,6 +26,7 @@
 
 скрипт [Greenplum.sql](https://github.com/EsSanches/DE-step/blob/main/sql/final_project_adb_ss.sql)
 
+- создание DAGа для автоматизации загрузки в Airflow [load_date](https://github.com/EsSanches/DE-step/blob/main/greenplum/reload.py) 
 
 
 
