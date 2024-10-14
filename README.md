@@ -28,6 +28,12 @@
 
 - создание DAGа для автоматизации загрузки в Airflow [load_date](https://github.com/EsSanches/DE-step/blob/main/greenplum/reload.py) 
 
+# Пример разработки хранилища данных
+
+Модель DateVaut
+![Image alt](https://github.com/EsSanches/DE-step/blob/main/DV/DW.png)
+
+скрипт на PostgreSQL [date_v_air](https://github.com/EsSanches/DE-step/blob/main/DV/DateVault_air.sql)
 
 
 
