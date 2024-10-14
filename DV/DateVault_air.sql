@@ -11,7 +11,7 @@ port '5432'
 -- создание пользователя для подключени к базе данных
 create user mapping for postgres server flight options (
 user 'postgres',
-password 'SMR13'
+password ''
 );
 
 -- виртуальная схема
