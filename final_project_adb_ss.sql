@@ -123,7 +123,7 @@ create external table std7_59.traffic_ext(
 	frame_id bpchar(10),
 	quantity int4 
 )
-location ('pxf://gp.traffic?PROFILE=JDBC&JDBC_DRIVER=org.postgresql.Driver&DB_URL=jdbc:postgresql://192.168.214.212:5432/postgres&USER=intern&PASS=intern'
+location ('pxf://gp.traffic?PROFILE=JDBC&JDBC_DRIVER=org.postgresql.Driver&DB_URL=jdbc:postgresql://192.168.000.000:5432/postgres&USER=&PASS='
 ) on all
 format 'CUSTOM' (FORMATTER='pxfwritable_import')
 encoding 'UTF8';
@@ -153,15 +153,13 @@ promo_type varchar,
 amount_price numeric(5, 2),
 "date" date
 )
-location ('gpfdist://172.16.128.150:8081/coupons5.csv'
+location ('gpfdist://172.16.000.00:8081/coupons5.csv'
 ) on all 
 format 'CSV' (delimiter ','  null '' escape '"' quote '"')
 encoding 'UTF8'
 segment reject limit 10 rows;
 
 -- gpfdist -p 8081 
-
-select * from std7_59.coupons_ext;
 
 insert into std7_59.coupons(plant, "date", c_num, id_promo, material, billnum, price_in_bill, promo_type, amount_price)
 select plant, "date", c_num, id_promo, material, billnum, price_in_bill, promo_type, amount_price from std7_59.coupons_ext;
@@ -186,7 +184,7 @@ begin
 	v_ext_table_name = p_table||'_ext';  -- имя внешней таблицы
 	execute 'truncate table '||p_table;   -- очистка таблицы
 	execute 'drop external table if exists '||v_ext_table_name; -- удаление временной таблицы если существует
-	v_gpfdist = 'gpfdist://172.16.128.214:8081/'||p_file_name||'.csv'; -- подключение gpfdist
+	v_gpfdist = 'gpfdist://172.16.128.000:8081/'||p_file_name||'.csv'; -- подключение gpfdist
 	
     -- создание внешней таблицы
 	v_sql = 'create external table '||v_ext_table_name||'(like '||p_table||')  
@@ -337,7 +335,7 @@ begin
 	v_pxf_table = 'gp.'||v_main_table;
 
 	-- подключение по pxf и выведение строки в консоль
-	v_pxf = 'pxf://'||v_pxf_table||'?PROFILE=JDBC&JDBC_DRIVER=org.postgresql.Driver&DB_URL=jdbc:postgresql://192.168.214.212:5432/postgres&USER='
+	v_pxf = 'pxf://'||v_pxf_table||'?PROFILE=JDBC&JDBC_DRIVER=org.postgresql.Driver&DB_URL=jdbc:postgresql://192.168.214.000:5432/postgres&USER='
 					||p_user_id||'&PASS='||p_pass;
 				
 	select c.oid  																	-- ключи распределения целевой таблицы из системных таблиц
@@ -473,9 +471,9 @@ $$
 execute on any;
 
 
-select std7_59.f_load_delta_partition('std7_59.traffic', 'date', '2021-01-01', '2021-03-01', 'intern', 'intern');
+select std7_59.f_load_delta_partition('std7_59.traffic', 'date', '2021-01-01', '2021-03-01', '', '');
 
-select std7_59.f_load_delta_partition('std7_59.bills_item', 'calday', '2021-01-01', '2021-03-01', 'intern', 'intern');
+select std7_59.f_load_delta_partition('std7_59.bills_item', 'calday', '2021-01-01', '2021-03-01', '', '');
 
 select count(*) from std7_59.traffic;
 
@@ -750,99 +748,3 @@ select count(*) from std7_59.bills_item_ext where calday between '2021-01-01' an
 select count(*) from std7_59.bills_head where calday between '2021-01-01' and '2021-02-28';
 
 select * from std7_59.bills_head_ext where calday between '2021-01-01' and '2021-02-28';
-
-
-select sum(rpa_sat) 
-from std7_59.bills_item bi join std7_59.bills_head bh on bi.billnum = bh.billnum 
-where plant = 'M001' and bi.calday between '2021-01-01' and '2021-02-28';
-
-
-
-
-
-
-with rev_bill_qty as ( 										--Оборот, Кол-во проданных товаров, Количество чеков
-select plant,
-	sum(rpa_sat) as rev,
-	sum(qty) as mat_qty,
-	count(distinct(bi.billnum)) as bill_qty
-from bills_item bi join bills_head bh on bi.billnum = bh.billnum 
-where bi.calday between '2021-01-01' and '2021-02-28'
-group by plant
-),
-promo_coup_mat_qty as (										--Скидки по купонам, кол-во товаров по акции
-select 
-	c.plant,
-	sum(case 
-		when promo_type = '001' then promo_amount											--если скидка в абсолютном выражении
-		when promo_type = '002' then cast(promo_amount as decimal) / 100 * (rpa_sat/qty)	--если скидка в относительном выражении оборот делим 
-		end) 		as coupon_calc,															--на кол-во материала и делим на величину скидки
-	count(c.id_promo) as coup_qty
-from (
-select distinct 
-	c.plant, 
-	c.c_num,    
-	c.id_promo, 
-	p.promo_type, 
-	p.promo_amount, 
-	bi.rpa_sat, 
-	bi.qty 
-from coupons as c
-left join bills_item as bi
-on c.billnum = bi.billnum and c.material = bi.material 
-join promos as p
-on c.id_promo = p.id_promo and c.material = p.material
-where bi.calday between '2021-01-01' and '2021-02-28') as c
-group by plant
-),
-traffics as (	
-select 
-	plant, 
-	sum(quantity) as traffic
-from traffic t
-where t."date" between '2021-01-01' and '2021-02-28'
-group by plant
-)
-select 
-	rbq.plant,																		--номер магазина
-	rbq.rev,																		--оборот
-	pcq.coupon_calc,																--Скидки по купонам
-	(rbq.rev - pcq.coupon_calc) as trnvr_w_disc,									--Оборот с учетом скидки
-	rbq.mat_qty,																	--кол-во проданных товаров
-	rbq.bill_qty,																	--Количество чеков
-	t.traffic,																		--Трафик
-	pcq.coup_qty,																	--Кол-во товаров по акции
-	cast(pcq.coup_qty * 100 / rbq.mat_qty as decimal(7,1)) as perc_promo_mat,		--Доля товаров со скидкой
-	cast(rbq.mat_qty / rbq.bill_qty as decimal(7,2)) as avg_mat_in_bill,			--Среднее количество товаров в чеке
-	cast(rbq.bill_qty * 100 / t.traffic::float as decimal(10,2)) as koef_conve,		--Коэффициент конверсии магазина, %
-	cast(rbq.rev / rbq.bill_qty as decimal(7,2)) as avg_bill,						--Средний чек
-	cast(rbq.rev / t.traffic as decimal(10,1)) as rev_by_client						--Средняя выручка на посетит
-from rev_bill_qty rbq left join promo_coup_mat_qty pcq on rbq.plant = pcq.plant
-	right join traffics t on rbq.plant = t.plant 
-
-
-select plant,
-	sum(rpa_sat),
-	sum(qty),
-	 count(bi.billnum) as bill_qty
-from bills_item bi join bills_head bh on bi.billnum = bh.billnum 
-where bi.calday between '2021-01-01' and '2021-01-01'
-group by 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
