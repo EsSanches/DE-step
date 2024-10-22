@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, date
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
-from airflow.models import Variable
+from airflow.models import Variable  
 
 
 DB_CONN = "gp_std7_59"
