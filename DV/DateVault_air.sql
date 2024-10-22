@@ -6,7 +6,7 @@ create server flight foreign data wrapper postgres_fdw options (
 host 'localhost',
 dbname 'demo',
 port '5432'
-);
+);   
 
 -- создание пользователя для подключени к базе данных
 create user mapping for postgres server flight options (
