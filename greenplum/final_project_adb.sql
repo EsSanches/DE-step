@@ -307,8 +307,8 @@ AS $$
 
 declare
 	v_ext_table			text;
-	v_temp_table		text;
-	v_schema_name		text;
+	v_temp_table			text;
+	v_schema_name			text;
 	v_pxf_table			text;
 	v_sql				text;
 	v_pxf				text;
@@ -316,14 +316,14 @@ declare
 	v_dist_key			text;
 	v_params			text;
 	v_where				text;
-	v_load_interval		interval;
-	v_start_date		date;
+	v_load_interval			interval;
+	v_start_date			date;
 	v_end_date			date;
 	v_table_oid			int4;
 	v_cnt				int8;
-	v_check_partition	int8;
-	v_temp_table_2		text;
-	v_main_table		text;
+	v_check_partition		int8;
+	v_temp_table_2			text;
+	v_main_table			text;
 
 begin
 	--создаю переменные с помощью функций
@@ -480,127 +480,6 @@ select count(*) from std7_59.traffic;
 select * from std7_59.bills_item;
 
 
---функция для расчета витрины
-
-create or replace function std7_59.f_load_mart_rep(p_date_from text, p_date_to text)
-	RETURNS int4
-	LANGUAGE plpgsql
-	VOLATILE
-AS $$
-
-declare
-	v_date_from 	date;
-	v_date_to		date;
-	v_table_name	text;
-	v_sql			text;
-	v_return		int;
-	v_where		  	text;
-
-begin
-	
-	v_table_name = 'std7_59.s_rep_' || to_char(p_date_from::timestamp, 'YYYYMMDD')|| '_' ||to_char(p_date_to::timestamp, 'YYYYMMDD');
-	
-	v_date_from	= to_date(p_date_from, 'YYYY-MM-DD');    			
-	v_date_to = to_date(p_date_to, 'YYYY-MM-DD');
-	v_where = 'BETWEEN '''||v_date_from||''' AND '''||v_date_to||'''';
-
-	RAISE notice 'SQL_IS: %', v_date_from;
-	RAISE notice 'SQL_IS: %', v_date_to;
-	
-	v_sql = 'drop table if exists '||v_table_name;
-	execute v_sql;
-
-	v_sql = 'create table '||v_table_name||
-		' with (
-				appendonly = true,
-				orientation = column,
-				compresstype = zstd,
-				compresslevel = 1)
-				as 
-			with cte as (
-			SELECT 
-				ct.plant,
-	    		ct.calday,
-	    		SUM(ct.discount_amount) AS sum_discount,
-	    		COUNT(*) AS qty_dics_pr
-		  	FROM (SELECT 
-			  	bi.billnum,
-			    bi.material,
-			    c.plant,
-			    bi.calday,
-			    p.promo_amount,
-		    CASE 
-			    WHEN p.promo_type = ''001'' THEN p.promo_amount
-		      	WHEN p.promo_type = ''002'' THEN p.promo_amount * bi.rpa_sat * 0.01 / bi.qty
-		    	ELSE 0 
-				END AS discount_amount,
-		   		ROW_NUMBER() OVER (PARTITION BY c.id_promo ORDER BY c.id_promo) AS rn
-			FROM std7_59.coupons c
-		    	JOIN std7_59.bills_item bi ON c.billnum = bi.billnum AND c.material = bi.material
-		    	JOIN std7_59.promos p ON c.id_promo = p.id_promo
-				where bi.calday '||v_where||') as ct
-		  		WHERE rn = 1
-		  		GROUP BY ct.plant, ct.calday),
-			bills as (
-			SELECT
-				bi.calday,
-				bh.plant,
-		  		SUM(bi.rpa_sat) AS rpa_sum,
-		    	SUM(bi.qty) AS qty_sum,   
-		    	COUNT(DISTINCT bi.billnum) AS bills_count
-		 	FROM std7_59.bills_item bi
-		  		JOIN std7_59.bills_head bh ON bi.billnum = bh.billnum
-				--where bi.calday '||v_where||'
-		   		GROUP BY bh.plant, bi.calday),
-			traffic_t as (
-			select 
-				plant, 
-				"date", 
-				sum(quantity) tr_d 
-			from std7_59.traffic t
-				where t."date" '||v_where||'
-				group by plant, "date")
-			select
-				t.plant,																			--Завод
-				s.txt,																			 	--Завод
-				sum(b.rpa_sum) as rev,																--Оборот
-				sum(cte.sum_discount) as disc,														--Скидки по купонам
-				sum(b.rpa_sum) - sum(cte.sum_discount) as rev_with_disc,							--Оборот с учетом скидки
-				sum(b.qty_sum) as qty,																--Кол-во проданных товаров
-				sum(b.bills_count) as qty_bills,													--Количество чеков
-				sum(t.tr_d) as traffic,																--Трафик
-				sum(cte.qty_dics_pr) as sum_qty_dics_pr,											--Кол-во товаров по акции
-				round(sum(cte.qty_dics_pr) / sum(b.qty_sum) * 100, 2) as prop_disc_prod,			--Доля товаров со скидкой
-				round(sum(b.qty_sum) / sum(b.bills_count), 2) as avg_per_bill,						--Среднее количество товаров в чеке
-				round(sum(b.bills_count) / sum(t.tr_d), 2) * 100 as conve_rate,						--Коэффициент конверсии магазина, %
-				round(sum(b.rpa_sum) / sum(b.bills_count), 2) as avg_bill,							--Средний чек
-				case
-					when sum(t.tr_d) = 0 then 0
-					else round(sum(b.rpa_sum) / sum(t.tr_d), 2)
-				end as avg_rev_client																--Средняя выручка на одного посетителя
-			from traffic_t t left join cte on t.plant = cte.plant and cte.calday = t."date"
-				left join bills b on b.plant = t.plant and b.calday = t."date"
-				left join stores s on s.plant = t.plant
-				group by t.plant, s.txt, disc
-			distributed randomly;';
-		
-	raise notice 'LOAD_MART TABLE IS: %', v_sql;
-		
-	execute v_sql;
-	
-	perform std7_59.f_analyze_table(p_table_name := v_table_name);
-	
-	
-	execute 'select count(1) from ' ||v_table_name into v_return;
-
-	return v_return;
-	
-end;
-$$
-EXECUTE ON ANY;
-
-select * from std7_59.coupons c;
-
 -- рассчет витрины
 create or replace function std7_59.f_load_mart_fin(p_date_from text, p_date_to text)
 	RETURNS int4
@@ -608,9 +487,9 @@ create or replace function std7_59.f_load_mart_fin(p_date_from text, p_date_to t
 	VOLATILE
 AS $$
 declare
-	v_date_from 	date;
+	v_date_from 		date;
 	v_date_to		date;
-	v_table_name	text;
+	v_table_name		text;
 	v_sql			text;
 	v_return		int;
 	v_where		  	text;
@@ -637,8 +516,8 @@ begin
 			as
 	with rev_bill_qty as ( 										
 	select plant,
-		sum(rpa_sat) as rev,									--Оборот
-		sum(qty) as mat_qty,									--Кол-во проданных товаров
+		sum(rpa_sat) as rev,							--Оборот
+		sum(qty) as mat_qty,							--Кол-во проданных товаров
 		count(distinct(bi.billnum)) as bill_qty					--Количество чеков
 	from bills_item bi join bills_head bh on bi.billnum = bh.billnum 
 	where bi.calday '||v_where||' 
@@ -651,7 +530,7 @@ begin
 			when promo_type = ''001'' then promo_amount
 			when promo_type = ''002'' then cast(promo_amount as decimal) / 100 * (rpa_sat/qty)
 			else 0
-			end) 		as coupon_calc,							--Скидки по купонам
+			end) 		as coupon_calc,						--Скидки по купонам
 		count(c.id_promo) as coup_qty							--кол-во товаров по акции
 	from (
 	select distinct 
@@ -679,22 +558,22 @@ begin
 	group by plant
 	)
 	select 
-		rbq.plant,
-		rbq.rev,
-		pcq.coupon_calc,
-		(rbq.rev - pcq.coupon_calc) as trnvr_w_disc,
-		rbq.mat_qty,
-		rbq.bill_qty,
-		t.traffic,
-		pcq.coup_qty,
-		cast(pcq.coup_qty * 100 / rbq.mat_qty as decimal(7,1)) as perc_promo_mat,
-		cast(rbq.mat_qty / rbq.bill_qty as decimal(7,2)) as avg_mat_in_bill,
-		cast(rbq.bill_qty * 100 / t.traffic::float as decimal(10,2)) as koef_conve,
-		cast(rbq.rev / rbq.bill_qty as decimal(7,2)) as avg_bill,
+		rbq.plant,										--Завод
+		rbq.rev,										--Оборот
+		pcq.coupon_calc,									--Скидки по купонам
+		(rbq.rev - pcq.coupon_calc) as trnvr_w_disc,						--Оборот с учетом скидки
+		rbq.mat_qty,										--Кол-во проданных товаров
+		rbq.bill_qty,										--Количество чеков
+		t.traffic,										--Трафик
+		pcq.coup_qty,										--Кол-во товаров по акции
+		cast(pcq.coup_qty * 100 / rbq.mat_qty as decimal(7,1)) as perc_promo_mat,		--Доля товаров со скидкой
+		cast(rbq.mat_qty / rbq.bill_qty as decimal(7,2)) as avg_mat_in_bill,			--Среднее количество товаров в чеке
+		cast(rbq.bill_qty * 100 / t.traffic::float as decimal(10,2)) as koef_conve,		--Коэффициент конверсии магазина, %
+		cast(rbq.rev / rbq.bill_qty as decimal(7,2)) as avg_bill,				--Средний чек
 		case
 			when t.traffic = 0 then 0
 			else cast(rbq.rev / t.traffic as decimal(10,1)) 
-			end as rev_by_client
+			end as rev_by_client								--Средняя выручка на одного посетителя
 	from rev_bill_qty rbq left join promo_coup_mat_qty pcq on rbq.plant = pcq.plant
 		right join traffics t on rbq.plant = t.plant 
 	distributed randomly;';
