@@ -338,7 +338,7 @@ begin
 	v_pxf = 'pxf://'||v_pxf_table||'?PROFILE=JDBC&JDBC_DRIVER=org.postgresql.Driver&DB_URL=jdbc:postgresql://192.168.214.000:5432/postgres&USER='
 					||p_user_id||'&PASS='||p_pass;
 				
-	select c.oid  																	-- ключи распределения целевой таблицы из системных таблиц
+	select c.oid  									-- ключи распределения целевой таблицы из системных таблиц
 	into v_table_oid                                                                -- Идентификатор объекта (Object Identifier, OID) используется внутри Postgres Pro 
 	from pg_class as c inner join pg_namespace as n on c.relnamespace = n.oid       -- в качестве первичного ключа различных системных таблиц
 	where n.nspname||'.'||c.relname = p_table
