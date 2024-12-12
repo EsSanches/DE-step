@@ -34,7 +34,7 @@
 3. Разбить данные с листа "Заявки" по сроку кредита в соответствие с приведенными на листе "Разбивка по сроку кредита" данными.
   
 1) [решение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/Test_ab_bank_1.ipynb)
-   [таблица](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/%D0%BA%D0%BE%D0%BB-%D0%B2%D0%BE%20%D0%B8%20%D1%81%D1%83%D0%BC%D0%BC%D0%B0%20%D0%BA%D1%80%D0%B5%D0%B4%D0%B8%D1%82%D0%BE%D0%B2_1.xlsx)
+   ([таблица](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/%D0%BA%D0%BE%D0%BB-%D0%B2%D0%BE%20%D0%B8%20%D1%81%D1%83%D0%BC%D0%BC%D0%B0%20%D0%BA%D1%80%D0%B5%D0%B4%D0%B8%D1%82%D0%BE%D0%B2_1.xlsx))
 
 3) [решение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/test_ab_bank_2.ipynb)
 
