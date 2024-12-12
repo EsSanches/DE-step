@@ -17,4 +17,4 @@
 
 4. Составить таблицу с суммой и количеством заявок накопительно по месяцам
 
-Ответ в виде sql кода
+[Ответ в виде sql кода](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/Script-2.sql)
