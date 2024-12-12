@@ -40,4 +40,5 @@
    ([таблица](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/test_ab_bank_2.ipynb))
    
 5) [решение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/test_ab_bank_3.ipynb)
+   ([таблица](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/%D0%A0%D0%B0%D0%B7%D0%B1%D0%B8%D0%B2%D0%BA%D0%B0%20%D0%BF%D0%BE%20%D1%81%D1%80%D0%BE%D0%BA%D1%83_3.xlsx))
    
