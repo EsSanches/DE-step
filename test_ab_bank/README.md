@@ -33,4 +33,9 @@
 - дата заявки."
 3. Разбить данные с листа "Заявки" по сроку кредита в соответствие с приведенными на листе "Разбивка по сроку кредита" данными.
 
-1. 
+1. [выполнение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/Test_ab_bank_1.ipynb)
+
+2. [выполнение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/test_ab_bank_2.ipynb)
+
+3. [выполнение](https://github.com/EsSanches/DE-step/blob/main/test_ab_bank/test_ab_bank_3.ipynb)
+   
