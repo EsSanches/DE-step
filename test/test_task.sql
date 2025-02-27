@@ -1,6 +1,6 @@
 -- средняя посещаемость по каждой из тренировок
 select 
-round((select count(distinct customer_id) from std10_68.test_task where is_attend = 1) / count(event_id), 1) as cnt,
+round((select count(distinct customer_id) from test_task where is_attend = 1) / count(event_id), 1) as cnt,
 event_id
 from test_task
 where is_attend = 1
