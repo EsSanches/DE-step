@@ -43,7 +43,7 @@ where rn = 1;
 select 
 count(event_id) as c_e,
 event_id
-from std10_68.test_task
+from test_task
 group by event_id
 having c_e = (SELECT 
 max(c_e) as m_cnt
